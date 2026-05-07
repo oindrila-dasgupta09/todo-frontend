@@ -5,7 +5,7 @@ function App() {
   const [title, setTitle] = useState("");
   const [editId, setEditId] = useState(null);
 
-  const API = "http://localhost:5000/tasks";
+  const API = "https://todo-app-x6s5.onrender.com/tasks";
 
   // FETCH TASKS
   const fetchTasks = async () => {
