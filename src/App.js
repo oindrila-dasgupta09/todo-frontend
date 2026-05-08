@@ -61,33 +61,47 @@ return (
   <div
     style={{
       minHeight: "100vh",
-      background: "linear-gradient(to right, #1e293b, #0f172a)",
-      padding: "40px",
-      fontFamily: "Arial",
+      background:
+        "radial-gradient(circle at 15% 15%, #e8d5e5 0%, #d9d7f2 35%, #ccd9f5 70%, #dce3ec 100%)",
+      padding: "36px 16px",
+      fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
     }}
   >
     <div
       style={{
-        maxWidth: "700px",
+        maxWidth: "760px",
         margin: "auto",
-        background: "white",
-        borderRadius: "20px",
+        background: "#ffffff",
+        borderRadius: "18px",
         padding: "30px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        border: "1px solid #e8eafc",
+        boxShadow: "0 16px 36px rgba(99, 102, 241, 0.08)",
       }}
     >
       <h1
         style={{
           textAlign: "center",
-          color: "#0f172a",
-          marginBottom: "30px",
+          color: "#0b1220",
+          margin: "8px 0 6px",
+          letterSpacing: "0.2px",
+          fontSize: "2rem",
         }}
       >
-        Todo App 🚀
+        Todo App
       </h1>
+      <p
+        style={{
+          textAlign: "center",
+          color: "#475569",
+          margin: "0 0 26px",
+          fontSize: "0.98rem",
+        }}
+      >
+        Stay organized with a clean, focused workspace.
+      </p>
 
       {/* INPUT SECTION */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "30px" }}>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "22px" }}>
         <input
           type="text"
           placeholder="Enter task"
@@ -95,23 +109,29 @@ return (
           onChange={(e) => setTitle(e.target.value)}
           style={{
             flex: 1,
-            padding: "14px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
+            padding: "14px 16px",
+            borderRadius: "12px",
+            border: "1px solid #cbd5e1",
             fontSize: "16px",
+            outline: "none",
+            background: "#ffffff",
+            color: "#0f172a",
+            boxShadow: "inset 0 1px 2px rgba(15, 23, 42, 0.06)",
           }}
         />
 
         <button
           onClick={editId ? updateTask : addTask}
           style={{
-            background: editId ? "#f59e0b" : "#0f172a",
+            background: editId ? "#475569" : "#0f172a",
             color: "white",
             border: "none",
-            padding: "14px 20px",
-            borderRadius: "10px",
+            padding: "14px 22px",
+            borderRadius: "12px",
             cursor: "pointer",
-            fontWeight: "bold",
+            fontWeight: "700",
+            minWidth: "120px",
+            boxShadow: "0 8px 16px rgba(15, 23, 42, 0.16)",
           }}
         >
           {editId ? "Update" : "Add"}
@@ -124,21 +144,24 @@ return (
           <div
             key={task.id}
             style={{
-              background: "#f8fafc",
-              padding: "15px",
-              borderRadius: "12px",
-              marginBottom: "15px",
+              background: "#ffffff",
+              padding: "16px",
+              borderRadius: "14px",
+              marginBottom: "14px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
             }}
           >
             <span
               style={{
-                fontSize: "18px",
-                color: "#0f172a",
-                fontWeight: "500",
+                fontSize: "17px",
+                color: "#1e293b",
+                fontWeight: "600",
+                paddingRight: "12px",
+                wordBreak: "break-word",
               }}
             >
               {task.title}
@@ -152,32 +175,34 @@ return (
                   setTitle(task.title);
                 }}
                 style={{
-                  background: "#8678f5",
+                  background: "#334155",
                   color: "white",
                   border: "none",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
+                  padding: "10px 15px",
+                  borderRadius: "10px",
                   cursor: "pointer",
-                  fontWeight: "bold",
+                  fontWeight: "700",
+                  boxShadow: "0 6px 14px rgba(51, 65, 85, 0.18)",
                 }}
               >
-                ✏️ Update
+                Update
               </button>
 
               {/* DELETE BUTTON */}
               <button
                 onClick={() => deleteTask(task.id)}
                 style={{
-                  background: "#8f6d06df",
+                  background: "#dc2626",
                   color: "white",
                   border: "none",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
+                  padding: "10px 15px",
+                  borderRadius: "10px",
                   cursor: "pointer",
-                  fontWeight: "bold",
+                  fontWeight: "700",
+                  boxShadow: "0 6px 14px rgba(220, 38, 38, 0.18)",
                 }}
               >
-                ❌ Delete
+                Delete
               </button>
             </div>
           </div>
