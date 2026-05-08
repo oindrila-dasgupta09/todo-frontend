@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -11,20 +11,20 @@ function App() {
   const TASKS_API = `${API_BASE_URL}/tasks`;
   const ACTIVITIES_API = `${API_BASE_URL}/activities`;
 
-  const getTaskIdDate = (taskId) => {
+  const getTaskIdDate = useCallback((taskId) => {
     const numericId = Number(taskId);
     if (Number.isNaN(numericId)) return null;
     const parsedFromId = new Date(numericId);
     if (Number.isNaN(parsedFromId.getTime())) return null;
     return parsedFromId.toISOString();
-  };
+  }, []);
 
-  const normalizeTask = (task) => {
+  const normalizeTask = useCallback((task) => {
     const fallbackFromId = getTaskIdDate(task.id);
     const createdAt = task.createdAt || fallbackFromId;
     const updatedAt = task.updatedAt || createdAt || fallbackFromId;
     return { ...task, createdAt, updatedAt };
-  };
+  }, [getTaskIdDate]);
 
   const formatTime = (value) => {
     if (!value) return "Not available yet";
@@ -63,15 +63,15 @@ function App() {
   };
 
   // FETCH TASKS
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     const res = await fetch(TASKS_API);
     const data = await res.json();
     const normalized = Array.isArray(data) ? data.map(normalizeTask) : [];
     setTasks(normalized);
-  };
+  }, [TASKS_API, normalizeTask]);
 
   // FETCH ACTIVITY
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       const res = await fetch(ACTIVITIES_API);
       if (!res.ok) {
@@ -83,12 +83,12 @@ function App() {
     } catch (err) {
       setActivities([]);
     }
-  };
+  }, [ACTIVITIES_API]);
 
   useEffect(() => {
     fetchTasks();
     fetchActivities();
-  }, []);
+  }, [fetchTasks, fetchActivities]);
 
   const visibleActivities =
     activities.length > 0 ? activities : buildFallbackActivities(tasks);
