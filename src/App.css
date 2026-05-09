@@ -56,8 +56,8 @@ body.dark {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 10%, #eff6ff 0%, #eef2ff 24%, #f8fafc 100%);
-  color: #0f172a;
+  background: var(--bg-gradient);
+  color: var(--text-color);
 }
 
 button,
@@ -110,6 +110,43 @@ select {
   max-width: 720px;
   color: var(--empty-text);
   line-height: 1.7;
+}
+
+.hero-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.auth-card {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .stats-grid {
