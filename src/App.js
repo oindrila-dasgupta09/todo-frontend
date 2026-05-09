@@ -92,43 +92,87 @@ function App() {
     } catch {}
   };
 
-  const loadTasksForUser = (username) => {
+  const loadTasksForUser = async (username) => {
     if (!username) return [];
     try {
-      return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
+      const response = await fetch(`${TASKS_API}?email=${encodeURIComponent(username)}`);
+      if (!response.ok) {
+        // Fallback to localStorage if API fails
+        return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
+      }
+      return await response.json();
     } catch {
-      return [];
+      // Fallback to localStorage if API fails
+      try {
+        return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
+      } catch {
+        return [];
+      }
     }
   };
 
-  const saveTasksForUser = (username, nextTasks) => {
+  const saveTasksForUser = async (username, nextTasks) => {
     if (!username) return;
+    try {
+      // Save to backend
+      await fetch(TASKS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: username,
+          tasks: nextTasks,
+        }),
+      });
+    } catch {}
+    // Always save to localStorage as fallback
     try {
       localStorage.setItem(getUserKey(USER_TASKS_KEY_PREFIX, username), JSON.stringify(nextTasks));
     } catch {}
   };
 
-  const loadActivitiesForUser = (username) => {
+  const loadActivitiesForUser = async (username) => {
     if (!username) return [];
     try {
-      return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
+      const response = await fetch(`${ACTIVITIES_API}?email=${encodeURIComponent(username)}`);
+      if (!response.ok) {
+        // Fallback to localStorage if API fails
+        return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
+      }
+      return await response.json();
     } catch {
-      return [];
+      // Fallback to localStorage if API fails
+      try {
+        return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
+      } catch {
+        return [];
+      }
     }
   };
 
-  const saveActivitiesForUser = (username, nextActivities) => {
+  const saveActivitiesForUser = async (username, nextActivities) => {
     if (!username) return;
+    try {
+      // Save to backend
+      await fetch(ACTIVITIES_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: username,
+          activities: nextActivities,
+        }),
+      });
+    } catch {}
+    // Always save to localStorage as fallback
     try {
       localStorage.setItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username), JSON.stringify(nextActivities));
     } catch {}
   };
 
-  const addActivity = (activity) => {
+  const addActivity = async (activity) => {
     if (!currentUser) return;
     const nextActivities = [activity, ...activities].slice(0, 20);
     setActivities(nextActivities);
-    saveActivitiesForUser(currentUser, nextActivities);
+    await saveActivitiesForUser(currentUser, nextActivities);
   };
 
   const getAccount = (users, username) => {
@@ -319,7 +363,7 @@ function App() {
     setError("");
 
     try {
-      const savedTasks = loadTasksForUser(currentUser).map(normalizeTask);
+      const savedTasks = (await loadTasksForUser(currentUser)).map(normalizeTask);
       setTasks(savedTasks);
     } catch (err) {
       setError("Unable to load tasks. Try again later.");
@@ -335,7 +379,7 @@ function App() {
     }
 
     try {
-      const savedActivities = loadActivitiesForUser(currentUser);
+      const savedActivities = await loadActivitiesForUser(currentUser);
       setActivities(Array.isArray(savedActivities) ? savedActivities : []);
     } catch {
       setActivities([]);
@@ -422,7 +466,7 @@ function App() {
     ];
 
     setTasks(nextTasks);
-    saveTasksForUser(currentUser, nextTasks);
+    await saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "added",
@@ -448,7 +492,7 @@ function App() {
     );
 
     setTasks(nextTasks);
-    saveTasksForUser(currentUser, nextTasks);
+    await saveTasksForUser(currentUser, nextTasks);
     const updatedTask = nextTasks.find((task) => task.id === editId);
     if (updatedTask) {
       addActivity({
@@ -466,7 +510,7 @@ function App() {
     if (!currentUser) return;
     const nextTasks = tasks.filter((task) => task.id !== id);
     setTasks(nextTasks);
-    saveTasksForUser(currentUser, nextTasks);
+    await saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "deleted",
@@ -484,7 +528,7 @@ function App() {
     );
 
     setTasks(nextTasks);
-    saveTasksForUser(currentUser, nextTasks);
+    await saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: nextCompleted ? "completed" : "reopened",
@@ -501,7 +545,7 @@ function App() {
 
     const nextTasks = tasks.filter((task) => !task.completed);
     setTasks(nextTasks);
-    saveTasksForUser(currentUser, nextTasks);
+    await saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "cleared",
