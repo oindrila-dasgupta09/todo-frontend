@@ -94,7 +94,32 @@ function App() {
 
   const loadTasksForUser = (username) => {
     if (!username) return [];
+    
+    // Try to fetch from backend synchronously using localStorage cache
+    const cacheKey = `${username}_tasks_cache`;
+    const lastFetch = localStorage.getItem(`${username}_tasks_fetch_time`);
+    const now = Date.now();
+    
+    // If cache is older than 10 seconds, try to refresh from backend
+    if (!lastFetch || now - parseInt(lastFetch) > 10000) {
+      fetch(`${TASKS_API}?email=${encodeURIComponent(username)}`)
+        .then(r => r.json())
+        .then(backendTasks => {
+          if (Array.isArray(backendTasks)) {
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(backendTasks));
+              localStorage.setItem(`${username}_tasks_fetch_time`, String(now));
+              localStorage.setItem(getUserKey(USER_TASKS_KEY_PREFIX, username), JSON.stringify(backendTasks));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+    
+    // Return cached or local storage version
     try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached);
       return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
     } catch {
       return [];
@@ -105,8 +130,11 @@ function App() {
     if (!username) return;
     try {
       localStorage.setItem(getUserKey(USER_TASKS_KEY_PREFIX, username), JSON.stringify(nextTasks));
+      const cacheKey = `${username}_tasks_cache`;
+      localStorage.setItem(cacheKey, JSON.stringify(nextTasks));
+      localStorage.setItem(`${username}_tasks_fetch_time`, String(Date.now()));
     } catch {}
-    // Sync to backend as backup (fire and forget)
+    // Sync to backend (fire and forget)
     try {
       fetch(`${TASKS_API}`, {
         method: "POST",
@@ -118,7 +146,32 @@ function App() {
 
   const loadActivitiesForUser = (username) => {
     if (!username) return [];
+    
+    // Try to fetch from backend synchronously using localStorage cache
+    const cacheKey = `${username}_activities_cache`;
+    const lastFetch = localStorage.getItem(`${username}_activities_fetch_time`);
+    const now = Date.now();
+    
+    // If cache is older than 10 seconds, try to refresh from backend
+    if (!lastFetch || now - parseInt(lastFetch) > 10000) {
+      fetch(`${ACTIVITIES_API}?email=${encodeURIComponent(username)}`)
+        .then(r => r.json())
+        .then(backendActivities => {
+          if (Array.isArray(backendActivities)) {
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(backendActivities));
+              localStorage.setItem(`${username}_activities_fetch_time`, String(now));
+              localStorage.setItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username), JSON.stringify(backendActivities));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+    
+    // Return cached or local storage version
     try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) return JSON.parse(cached);
       return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
     } catch {
       return [];
@@ -129,8 +182,11 @@ function App() {
     if (!username) return;
     try {
       localStorage.setItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username), JSON.stringify(nextActivities));
+      const cacheKey = `${username}_activities_cache`;
+      localStorage.setItem(cacheKey, JSON.stringify(nextActivities));
+      localStorage.setItem(`${username}_activities_fetch_time`, String(Date.now()));
     } catch {}
-    // Sync to backend as backup (fire and forget)
+    // Sync to backend (fire and forget)
     try {
       fetch(`${ACTIVITIES_API}`, {
         method: "POST",
@@ -184,6 +240,18 @@ function App() {
       localStorage.setItem(CURRENT_USER_KEY, username);
     } catch {}
     setAuthError("");
+    
+    // Fetch tasks from backend on login
+    try {
+      fetch(`${TASKS_API}?email=${encodeURIComponent(username)}`)
+        .then(r => r.json())
+        .then(backendTasks => {
+          if (Array.isArray(backendTasks) && backendTasks.length > 0) {
+            saveTasksForUser(username, backendTasks);
+          }
+        })
+        .catch(() => {});
+    } catch {}
   };
 
   const handleSignup = (event) => {
@@ -219,6 +287,18 @@ function App() {
       localStorage.setItem(CURRENT_USER_KEY, username);
     } catch {}
     setAuthError("");
+    
+    // Fetch tasks from backend on signup
+    try {
+      fetch(`${TASKS_API}?email=${encodeURIComponent(username)}`)
+        .then(r => r.json())
+        .then(backendTasks => {
+          if (Array.isArray(backendTasks) && backendTasks.length > 0) {
+            saveTasksForUser(username, backendTasks);
+          }
+        })
+        .catch(() => {});
+    } catch {}
   };
 
   const handleForgotPassword = () => {
