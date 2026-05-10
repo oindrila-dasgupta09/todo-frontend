@@ -92,87 +92,59 @@ function App() {
     } catch {}
   };
 
-  const loadTasksForUser = async (username) => {
+  const loadTasksForUser = (username) => {
     if (!username) return [];
     try {
-      const response = await fetch(`${TASKS_API}?email=${encodeURIComponent(username)}`);
-      if (!response.ok) {
-        // Fallback to localStorage if API fails
-        return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
-      }
-      return await response.json();
+      return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
     } catch {
-      // Fallback to localStorage if API fails
-      try {
-        return JSON.parse(localStorage.getItem(getUserKey(USER_TASKS_KEY_PREFIX, username))) || [];
-      } catch {
-        return [];
-      }
+      return [];
     }
   };
 
-  const saveTasksForUser = async (username, nextTasks) => {
+  const saveTasksForUser = (username, nextTasks) => {
     if (!username) return;
-    try {
-      // Save to backend
-      await fetch(TASKS_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: username,
-          tasks: nextTasks,
-        }),
-      });
-    } catch {}
-    // Always save to localStorage as fallback
     try {
       localStorage.setItem(getUserKey(USER_TASKS_KEY_PREFIX, username), JSON.stringify(nextTasks));
     } catch {}
+    // Sync to backend as backup (fire and forget)
+    try {
+      fetch(`${TASKS_API}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username, tasks: nextTasks }),
+      }).catch(() => {});
+    } catch {}
   };
 
-  const loadActivitiesForUser = async (username) => {
+  const loadActivitiesForUser = (username) => {
     if (!username) return [];
     try {
-      const response = await fetch(`${ACTIVITIES_API}?email=${encodeURIComponent(username)}`);
-      if (!response.ok) {
-        // Fallback to localStorage if API fails
-        return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
-      }
-      return await response.json();
+      return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
     } catch {
-      // Fallback to localStorage if API fails
-      try {
-        return JSON.parse(localStorage.getItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username))) || [];
-      } catch {
-        return [];
-      }
+      return [];
     }
   };
 
-  const saveActivitiesForUser = async (username, nextActivities) => {
+  const saveActivitiesForUser = (username, nextActivities) => {
     if (!username) return;
-    try {
-      // Save to backend
-      await fetch(ACTIVITIES_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: username,
-          activities: nextActivities,
-        }),
-      });
-    } catch {}
-    // Always save to localStorage as fallback
     try {
       localStorage.setItem(getUserKey(USER_ACTIVITIES_KEY_PREFIX, username), JSON.stringify(nextActivities));
     } catch {}
+    // Sync to backend as backup (fire and forget)
+    try {
+      fetch(`${ACTIVITIES_API}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: username, activities: nextActivities }),
+      }).catch(() => {});
+    } catch {}
   };
 
-  const addActivity = async (activity) => {
+  const addActivity = (activity) => {
     if (!currentUser) return;
     const nextActivities = [activity, ...activities].slice(0, 20);
     setActivities(nextActivities);
-    await saveActivitiesForUser(currentUser, nextActivities);
+    saveActivitiesForUser(currentUser, nextActivities);
   };
 
   const getAccount = (users, username) => {
@@ -363,7 +335,7 @@ function App() {
     setError("");
 
     try {
-      const savedTasks = (await loadTasksForUser(currentUser)).map(normalizeTask);
+      const savedTasks = loadTasksForUser(currentUser).map(normalizeTask);
       setTasks(savedTasks);
     } catch (err) {
       setError("Unable to load tasks. Try again later.");
@@ -379,7 +351,7 @@ function App() {
     }
 
     try {
-      const savedActivities = await loadActivitiesForUser(currentUser);
+      const savedActivities = loadActivitiesForUser(currentUser);
       setActivities(Array.isArray(savedActivities) ? savedActivities : []);
     } catch {
       setActivities([]);
@@ -466,7 +438,7 @@ function App() {
     ];
 
     setTasks(nextTasks);
-    await saveTasksForUser(currentUser, nextTasks);
+    saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "added",
@@ -492,7 +464,7 @@ function App() {
     );
 
     setTasks(nextTasks);
-    await saveTasksForUser(currentUser, nextTasks);
+    saveTasksForUser(currentUser, nextTasks);
     const updatedTask = nextTasks.find((task) => task.id === editId);
     if (updatedTask) {
       addActivity({
@@ -510,7 +482,7 @@ function App() {
     if (!currentUser) return;
     const nextTasks = tasks.filter((task) => task.id !== id);
     setTasks(nextTasks);
-    await saveTasksForUser(currentUser, nextTasks);
+    saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "deleted",
@@ -528,7 +500,7 @@ function App() {
     );
 
     setTasks(nextTasks);
-    await saveTasksForUser(currentUser, nextTasks);
+    saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: nextCompleted ? "completed" : "reopened",
@@ -545,7 +517,7 @@ function App() {
 
     const nextTasks = tasks.filter((task) => !task.completed);
     setTasks(nextTasks);
-    await saveTasksForUser(currentUser, nextTasks);
+    saveTasksForUser(currentUser, nextTasks);
     addActivity({
       id: `activity-${Date.now()}`,
       type: "cleared",
