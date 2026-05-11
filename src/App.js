@@ -58,7 +58,7 @@ function App() {
   });
 
   const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || "https://todo-app-x6s5.onrender.com";
+    process.env.REACT_APP_API_BASE_URL || "https://todo-app-x6s5.onrender.com/api";
   const TASKS_API = `${API_BASE_URL}/tasks`;
   const ACTIVITIES_API = `${API_BASE_URL}/activities`;
 
@@ -422,7 +422,7 @@ function App() {
             }
           })
           .catch(() => {});
-      }, 10000);
+      }, 3000);
       
       return () => clearInterval(syncInterval);
     } else {
@@ -484,6 +484,37 @@ function App() {
     setEditId(null);
   };
 
+  // Fetch from backend immediately to sync with other devices
+  const immediateSync = () => {
+    if (!currentUser) return;
+    fetch(`${TASKS_API}?email=${encodeURIComponent(currentUser)}`)
+      .then(r => r.json())
+      .then(backendTasks => {
+        if (Array.isArray(backendTasks)) {
+          setTasks(prevTasks => {
+            const localMap = new Map(prevTasks.map(t => [t.id, t]));
+            const backendMap = new Map(backendTasks.map(t => [t.id, normalizeTask(t)]));
+            
+            const merged = new Map(localMap);
+            
+            for (const [id, backendTask] of backendMap) {
+              if (localMap.has(id)) {
+                const localTask = localMap.get(id);
+                if (localTask.completed !== backendTask.completed) {
+                  merged.set(id, { ...localTask, completed: backendTask.completed });
+                }
+              } else {
+                merged.set(id, backendTask);
+              }
+            }
+            
+            return Array.from(merged.values());
+          });
+        }
+      })
+      .catch(() => {});
+  };
+
   const addTask = () => {
     const cleanTitle = title.trim();
     if (!cleanTitle || !currentUser) return;
@@ -510,6 +541,7 @@ function App() {
       timestamp: new Date().toISOString(),
     });
     resetForm();
+    immediateSync();
   };
 
   const updateTask = () => {
@@ -539,6 +571,7 @@ function App() {
       });
     }
     resetForm();
+    immediateSync();
   };
 
   const deleteTask = (id) => {
@@ -553,6 +586,7 @@ function App() {
       title: tasks.find((task) => task.id === id)?.title || "Task",
       timestamp: new Date().toISOString(),
     });
+    immediateSync();
   };
 
   const toggleCompletion = (task) => {
@@ -571,6 +605,7 @@ function App() {
       title: task.title,
       timestamp: new Date().toISOString(),
     });
+    immediateSync();
   };
 
   const clearCompleted = () => {
@@ -588,6 +623,7 @@ function App() {
       title: `${completedTasks.length} completed tasks removed`,
       timestamp: new Date().toISOString(),
     });
+    immediateSync();
   };
 
   return (
