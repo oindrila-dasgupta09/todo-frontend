@@ -387,28 +387,42 @@ function App() {
       fetchTasks();
       fetchActivities();
       
-      // Smart periodic sync: only merge NEW tasks from backend (don't overwrite local)
+      // Smart sync: merge changes from backend without losing local edits
       const syncInterval = setInterval(() => {
         fetch(`${TASKS_API}?email=${encodeURIComponent(currentUser)}`)
           .then(r => r.json())
           .then(backendTasks => {
             if (Array.isArray(backendTasks)) {
               setTasks(prevTasks => {
-                // Merge: keep all local tasks, add any new ones from backend
-                const localIds = new Set(prevTasks.map(t => t.id));
-                const newFromBackend = backendTasks.filter(
-                  bt => !localIds.has(bt.id)
-                ).map(normalizeTask);
+                // Create maps for easy lookup
+                const localMap = new Map(prevTasks.map(t => [t.id, t]));
+                const backendMap = new Map(backendTasks.map(t => [t.id, normalizeTask(t)]));
                 
-                if (newFromBackend.length > 0) {
-                  return [...newFromBackend, ...prevTasks];
+                // Merge strategy: 
+                // 1. Keep all local tasks
+                // 2. Add new tasks from backend
+                // 3. Update completion status if backend changed it
+                const merged = new Map(localMap);
+                
+                for (const [id, backendTask] of backendMap) {
+                  if (localMap.has(id)) {
+                    // Task exists locally - only sync completion status if different
+                    const localTask = localMap.get(id);
+                    if (localTask.completed !== backendTask.completed) {
+                      merged.set(id, { ...localTask, completed: backendTask.completed });
+                    }
+                  } else {
+                    // New task from backend - add it
+                    merged.set(id, backendTask);
+                  }
                 }
-                return prevTasks;
+                
+                return Array.from(merged.values());
               });
             }
           })
           .catch(() => {});
-      }, 10000); // Check every 10 seconds for NEW tasks from other devices
+      }, 10000);
       
       return () => clearInterval(syncInterval);
     } else {
