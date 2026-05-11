@@ -387,22 +387,28 @@ function App() {
       fetchTasks();
       fetchActivities();
       
-      // Periodic sync: fetch from backend every 10 seconds to sync across devices
+      // Smart periodic sync: only merge NEW tasks from backend (don't overwrite local)
       const syncInterval = setInterval(() => {
         fetch(`${TASKS_API}?email=${encodeURIComponent(currentUser)}`)
           .then(r => r.json())
           .then(backendTasks => {
             if (Array.isArray(backendTasks)) {
-              const localTasks = loadTasksForUser(currentUser);
-              // Only update if backend has different data
-              if (JSON.stringify(backendTasks) !== JSON.stringify(localTasks)) {
-                setTasks(backendTasks.map(normalizeTask));
-                saveTasksForUser(currentUser, backendTasks);
-              }
+              setTasks(prevTasks => {
+                // Merge: keep all local tasks, add any new ones from backend
+                const localIds = new Set(prevTasks.map(t => t.id));
+                const newFromBackend = backendTasks.filter(
+                  bt => !localIds.has(bt.id)
+                ).map(normalizeTask);
+                
+                if (newFromBackend.length > 0) {
+                  return [...newFromBackend, ...prevTasks];
+                }
+                return prevTasks;
+              });
             }
           })
           .catch(() => {});
-      }, 10000); // Sync every 10 seconds
+      }, 10000); // Check every 10 seconds for NEW tasks from other devices
       
       return () => clearInterval(syncInterval);
     } else {
