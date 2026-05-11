@@ -386,6 +386,25 @@ function App() {
     if (currentUser) {
       fetchTasks();
       fetchActivities();
+      
+      // Periodic sync: fetch from backend every 10 seconds to sync across devices
+      const syncInterval = setInterval(() => {
+        fetch(`${TASKS_API}?email=${encodeURIComponent(currentUser)}`)
+          .then(r => r.json())
+          .then(backendTasks => {
+            if (Array.isArray(backendTasks)) {
+              const localTasks = loadTasksForUser(currentUser);
+              // Only update if backend has different data
+              if (JSON.stringify(backendTasks) !== JSON.stringify(localTasks)) {
+                setTasks(backendTasks.map(normalizeTask));
+                saveTasksForUser(currentUser, backendTasks);
+              }
+            }
+          })
+          .catch(() => {});
+      }, 10000); // Sync every 10 seconds
+      
+      return () => clearInterval(syncInterval);
     } else {
       setTasks([]);
       setActivities([]);
