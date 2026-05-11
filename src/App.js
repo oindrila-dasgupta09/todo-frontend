@@ -405,7 +405,7 @@ function App() {
     setEditId(null);
   };
 
-  const addTask = async () => {
+  const addTask = () => {
     const cleanTitle = title.trim();
     if (!cleanTitle || !currentUser) return;
 
@@ -433,7 +433,7 @@ function App() {
     resetForm();
   };
 
-  const updateTask = async () => {
+  const updateTask = () => {
     const cleanTitle = title.trim();
     if (!cleanTitle || !editId || !currentUser) return;
 
@@ -462,7 +462,7 @@ function App() {
     resetForm();
   };
 
-  const deleteTask = async (id) => {
+  const deleteTask = (id) => {
     if (!currentUser) return;
     const nextTasks = tasks.filter((task) => task.id !== id);
     setTasks(nextTasks);
@@ -476,7 +476,7 @@ function App() {
     });
   };
 
-  const toggleCompletion = async (task) => {
+  const toggleCompletion = (task) => {
     if (!currentUser) return;
     const nextCompleted = !task.completed;
     const nextTasks = tasks.map((item) =>
@@ -494,7 +494,7 @@ function App() {
     });
   };
 
-  const clearCompleted = async () => {
+  const clearCompleted = () => {
     if (!currentUser) return;
     const completedTasks = tasks.filter((task) => task.completed);
     if (completedTasks.length === 0) return;
