@@ -51,7 +51,7 @@ const [isSignup, setIsSignup] = useState(false);
     } catch (error) {
       console.log(error);
     }
-  }, [currentUser, token, saveCachedTasks, loadCachedTasks]);
+  }, []);
   
 
   // =========================
@@ -63,13 +63,13 @@ const [isSignup, setIsSignup] = useState(false);
 
       fetchTasks();
 
-      const interval = setInterval(() => {
-        fetchTasks();
-      }, 3000);
+      //const interval = setInterval(() => {
+     //   fetchTasks();
+     // }, 3000);
 
-      return () => clearInterval(interval);
+      //return () => clearInterval(interval);
     }
-  }, [token, currentUser, fetchTasks, loadCachedTasks]);
+  }, [token, fetchTasks]);
 
   // =========================
   // SIGNUP
