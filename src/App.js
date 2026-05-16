@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:3000";
-
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
+const AUTH_API_URL = `${API_BASE_URL}/auth`;
+const TASKS_API_URL = `${API_BASE_URL}/tasks`;
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+
+  const [editId, setEditId] = useState(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,36 +25,33 @@ const [isSignup, setIsSignup] = useState(false);
     localStorage.getItem("user") || ""
   );
 
-  const [loading, setLoading] = useState(false);
+  
 
   // =========================
   // FETCH TASKS
   // =========================
 
-  const fetchTasks = async () => {
-  try {
-
-    const response = await fetch(
-      `${API_BASE_URL}/tasks`,
-      {
+  const fetchTasks = useCallback(async () => {
+    try {
+      const response = await fetch(TASKS_API_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       }
-    );
+      );
 
-    const data = await response.json();
+      const data = await response.json();
+      console.log("TASKS =", data);
 
-    console.log("TASKS =", data);
+      if (data.success) {
+  setTasks(data.tasks);
+}
+      
 
-    if (data.success) {
-      setTasks(data.tasks);
+    } catch (error) {
+      console.log(error);
     }
-
-  } catch (error) {
-    console.log(error);
-  }
-};
+  }, [currentUser, token, saveCachedTasks, loadCachedTasks]);
   
 
   // =========================
@@ -61,6 +60,7 @@ const [isSignup, setIsSignup] = useState(false);
 
   useEffect(() => {
     if (token) {
+
       fetchTasks();
 
       const interval = setInterval(() => {
@@ -69,7 +69,7 @@ const [isSignup, setIsSignup] = useState(false);
 
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [token, currentUser, fetchTasks, loadCachedTasks]);
 
   // =========================
   // SIGNUP
@@ -80,7 +80,7 @@ const handleSignup = async () => {
   try {
 
     const response = await fetch(
-      `${API_BASE_URL}/auth/signup`,
+      `${AUTH_API_URL}/signup`,
       {
         method: "POST",
         headers: {
@@ -128,7 +128,7 @@ const handleLogin = async () => {
   try {
 
     const response = await fetch(
-      `${API_BASE_URL}/auth/login`,
+      `${AUTH_API_URL}/login`,
       {
         method: "POST",
         headers: {
@@ -192,39 +192,84 @@ const handleLogin = async () => {
   // ADD TASK
   // =========================
 
-  const addTask = async () => {
+
+
+const addTask = async () => {
 
   if (!title.trim()) return;
 
   try {
 
-    const response = await fetch(
-      `${API_BASE_URL}/tasks`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title,
-        }),
+    // ======================
+    // UPDATE TASK
+    // ======================
+
+    if (editId) {
+
+      const response = await fetch(
+        `${TASKS_API_URL}/${editId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (data.success) {
+        setTitle("");
+        setEditId(null);
+        fetchTasks();
       }
-    );
 
-    const data = await response.json();
+    }
 
-    console.log(data);
+    // ======================
+    // CREATE TASK
+    // ======================
 
-    if (data.success) {
-      setTitle("");
-      fetchTasks();
+    else {
+
+      const response = await fetch(
+        TASKS_API_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (data.success) {
+        setTitle("");
+        fetchTasks();
+      }
+
     }
 
   } catch (error) {
     console.log(error);
   }
-};  
+};
+
+
+
 
   // =========================
   // DELETE TASK
@@ -233,7 +278,7 @@ const handleLogin = async () => {
   const deleteTask = async (id) => {
     try {
       await fetch(
-        `${API_BASE_URL}/tasks/${id}`,
+        `${TASKS_API_URL}/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -255,7 +300,7 @@ const handleLogin = async () => {
   const toggleTask = async (task) => {
     try {
       await fetch(
-        `${API_BASE_URL}/tasks/${task.id}`,
+        `${TASKS_API_URL}/${task.id}`,
         {
           method: "PUT",
           headers: {
@@ -454,7 +499,7 @@ const handleLogin = async () => {
               className="button primary-button"
               onClick={addTask}
             >
-              Add Task
+              {editId ? "Update Task" : "Add Task"}
             </button>
           </div>
 
@@ -467,41 +512,50 @@ const handleLogin = async () => {
               >
 
                 <div className="task-meta">
-                  <div
-                    style={{
-                      textDecoration:
-                        task.completed
-                          ? "line-through"
-                          : "none",
-                    }}
-                  >
-                    {task.title}
-                  </div>
+                  <label className="task-meta">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(task)}
+                    />
+
+                    <span
+                      style={{
+                        textDecoration:
+                          task.completed
+                            ? "line-through"
+                            : "none",
+                      }}
+                    >
+                      {task.title}
+                    </span>
+                  </label>
                 </div>
 
                 <div className="task-actions">
 
-                  <button
-                    className="task-btn complete-btn"
-                    onClick={() =>
-                      toggleTask(task)
-                    }
-                  >
-                    {task.completed
-                      ? "Undo"
-                      : "Complete"}
-                  </button>
+  <button
+    className="task-btn update-btn"
+    onClick={() => {
+      setEditId(task.id);
+      setTitle(task.title);
+    }}
+  >
+    Update
+  </button>
 
-                  <button
-                    className="task-btn delete-btn"
-                    onClick={() =>
-                      deleteTask(task.id)
-                    }
-                  >
-                    Delete
-                  </button>
+  <button
+    className="task-btn delete-btn"
+    onClick={() =>
+      deleteTask(task.id)
+    }
+  >
+    Delete
+  </button>
 
-                </div>
+</div>
+
+
 
               </div>
             ))}
